@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HabitFlow — Gerenciador de Hábitos</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="noise"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">HabitFlow</span>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-btn active" data-view="today">
+        <span class="nav-icon">◉</span> Hoje
+      </button>
+      <button class="nav-btn" data-view="history">
+        <span class="nav-icon">◈</span> Histórico
+      </button>
+      <button class="nav-btn" data-view="stats">
+        <span class="nav-icon">◇</span> Estatísticas
+      </button>
+    </nav>
+
+    <div class="sidebar-date">
+      <div class="date-label">Hoje é</div>
+      <div class="date-value" id="sidebarDate"></div>
+    </div>
+
+    <div class="streak-card">
+      <div class="streak-label">🔥 Streak atual</div>
+      <div class="streak-number" id="streakCount">0</div>
+      <div class="streak-sub">dias consecutivos</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- VIEW: TODAY -->
+    <section class="view active" id="view-today">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Seus Hábitos</h1>
+          <p class="page-sub">Marque o que você completou hoje</p>
+        </div>
+        <button class="btn-add" id="openModal">+ Novo Hábito</button>
+      </header>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-meta">
+          <span id="progressLabel">0 de 0 hábitos concluídos</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="habits-list" id="habitsList">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">◈</div>
+          <p>Nenhum hábito ainda.</p>
+          <p>Clique em <strong>+ Novo Hábito</strong> para começar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: HISTORY -->
+    <section class="view" id="view-history">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Histórico</h1>
+          <p class="page-sub">Calendário de consistência</p>
+        </div>
+      </header>
+
+      <div class="history-grid-wrap">
+        <div class="history-controls">
+          <button class="month-nav" id="prevMonth">‹</button>
+          <span class="month-label" id="monthLabel"></span>
+          <button class="month-nav" id="nextMonth">›</button>
+        </div>
+        <div class="calendar-weekdays">
+          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="calendar-legend">
+          <span class="legend-dot dot-0"></span> Nenhum
+          <span class="legend-dot dot-1"></span> Parcial
+          <span class="legend-dot dot-2"></span> Completo
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: STATS -->
+    <section class="view" id="view-stats">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Estatísticas</h1>
+          <p class="page-sub">Seu desempenho por hábito</p>
+        </div>
+      </header>
+      <div class="stats-grid" id="statsGrid"></div>
+    </section>
+
+  </main>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Novo Hábito</h2>
+        <button class="modal-close" id="closeModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <label class="input-label">Nome do hábito</label>
+        <input type="text" class="input-text" id="habitName" placeholder="Ex: Beber 2L de água" maxlength="40" />
+
+        <label class="input-label">Ícone</label>
+        <div class="emoji-picker" id="emojiPicker">
+          <span data-emoji="💧">💧</span>
+          <span data-emoji="📚">📚</span>
+          <span data-emoji="🏃">🏃</span>
+          <span data-emoji="🧘">🧘</span>
+          <span data-emoji="🥗">🥗</span>
+          <span data-emoji="😴">😴</span>
+          <span data-emoji="🎸">🎸</span>
+          <span data-emoji="✍️">✍️</span>
+          <span data-emoji="🧹">🧹</span>
+          <span data-emoji="💪">💪</span>
+          <span data-emoji="🌿">🌿</span>
+          <span data-emoji="🎯">🎯</span>
+        </div>
+
+        <label class="input-label">Cor</label>
+        <div class="color-picker" id="colorPicker">
+          <span data-color="#FF6B6B" style="background:#FF6B6B"></span>
+          <span data-color="#FFD93D" style="background:#FFD93D"></span>
+          <span data-color="#6BCB77" style="background:#6BCB77"></span>
+          <span data-color="#4FC3F7" style="background:#4FC3F7"></span>
+          <span data-color="#CE93D8" style="background:#CE93D8"></span>
+          <span data-color="#FFB74D" style="background:#FFB74D"></span>
+          <span data-color="#F48FB1" style="background:#F48FB1"></span>
+          <span data-color="#80CBC4" style="background:#80CBC4"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="cancelModal">Cancelar</button>
+        <button class="btn-save" id="saveHabit">Criar Hábito</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRM TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
