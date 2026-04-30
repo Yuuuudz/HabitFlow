@@ -10,6 +10,9 @@
 <body>
   <div class="noise"></div>
 
+  <!-- CONFETTI CANVAS -->
+  <canvas id="confettiCanvas"></canvas>
+
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="logo">
@@ -38,6 +41,18 @@
       <div class="streak-label">🔥 Streak atual</div>
       <div class="streak-number" id="streakCount">0</div>
       <div class="streak-sub">dias consecutivos</div>
+    </div>
+
+    <!-- BACKUP BUTTONS -->
+    <div class="backup-section">
+      <div class="backup-label">Backup</div>
+      <button class="btn-backup" id="exportData">
+        <span class="backup-icon">↑</span> Exportar
+      </button>
+      <button class="btn-backup btn-backup-import" id="importData">
+        <span class="backup-icon">↓</span> Importar
+      </button>
+      <input type="file" id="importFileInput" accept=".json" style="display:none" />
     </div>
   </aside>
 
@@ -113,11 +128,11 @@
 
   </main>
 
-  <!-- MODAL -->
+  <!-- MODAL CRIAR / EDITAR HÁBITO -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <div class="modal-header">
-        <h2>Novo Hábito</h2>
+        <h2 id="modalTitle">Novo Hábito</h2>
         <button class="modal-close" id="closeModal">✕</button>
       </div>
       <div class="modal-body">
@@ -159,7 +174,7 @@
     </div>
   </div>
 
-  <!-- DELETE CONFIRM TOAST -->
+  <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
   <script src="app.js"></script>

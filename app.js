@@ -1,6 +1,7 @@
 /**
  * HabitFlow — app.js
  * Gerenciador de Hábitos com localStorage
+ * Features: edit modal, drag & drop reorder, export/import backup, confetti on 100%
  */
 
 // ============================================================
@@ -13,32 +14,27 @@ let habits = [];
 /** @type {Object<string, string[]>} Mapa de data ISO -> array de IDs de hábitos concluídos */
 let completions = {};
 
-// Data sendo navegada no calendário
 let calendarYear = new Date().getFullYear();
 let calendarMonth = new Date().getMonth();
 
-// Seleções no modal
 let selectedEmoji = '💧';
 let selectedColor = '#FF6B6B';
+
+// ID do hábito sendo editado (null = criando novo)
+let editingHabitId = null;
+
+// Drag & drop state
+let dragSrcIndex = null;
 
 // ============================================================
 // UTILITÁRIOS
 // ============================================================
 
-/**
- * Retorna a data de hoje no formato YYYY-MM-DD (local)
- * @returns {string}
- */
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/**
- * Formata uma data ISO para exibição legível em pt-BR
- * @param {string} iso
- * @returns {string}
- */
 function formatDate(iso) {
   const [y, m, d] = iso.split('-');
   return new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', {
@@ -46,12 +42,17 @@ function formatDate(iso) {
   });
 }
 
-/**
- * Gera um ID único simples
- * @returns {string}
- */
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function formatCreated(iso) {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
 }
 
 // ============================================================
@@ -74,129 +75,28 @@ function loadData() {
 }
 
 // ============================================================
-// STREAK — calcula dias consecutivos com todos hábitos ok
+// STREAK
 // ============================================================
 
-/**
- * Calcula o streak atual (dias consecutivos com 100% de conclusão)
- * @returns {number}
- */
 function calcStreak() {
   if (!habits.length) return 0;
-
   let streak = 0;
   const today = new Date();
-
   for (let i = 0; i < 365; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const done = completions[iso] || [];
     const allDone = habits.every(h => done.includes(h.id));
-
     if (allDone) {
       streak++;
     } else if (i > 0) {
-      // Quebrou o streak (não conta o dia de hoje se ainda não completou)
       break;
     }
   }
   return streak;
 }
 
-// ============================================================
-// PROGRESSO DO DIA
-// ============================================================
-
-function updateProgress() {
-  const today = todayISO();
-  const done = completions[today] || [];
-  const total = habits.length;
-  const completed = habits.filter(h => done.includes(h.id)).length;
-  const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
-
-  document.getElementById('progressLabel').textContent =
-    `${completed} de ${total} hábito${total !== 1 ? 's' : ''} concluído${completed !== 1 ? 's' : ''}`;
-  document.getElementById('progressPercent').textContent = `${pct}%`;
-  document.getElementById('progressFill').style.width = `${pct}%`;
-  document.getElementById('streakCount').textContent = calcStreak();
-}
-
-// ============================================================
-// RENDERIZAÇÃO — VIEW TODAY
-// ============================================================
-
-function renderHabits() {
-  const container = document.getElementById('habitsList');
-  const today = todayISO();
-  const done = completions[today] || [];
-
-  // Limpa apenas os cards, mantém o empty-state no DOM
-  container.querySelectorAll('.habit-card').forEach(el => el.remove());
-
-  const emptyState = document.getElementById('emptyState');
-  emptyState.style.display = habits.length === 0 ? 'block' : 'none';
-
-  habits.forEach(habit => {
-    const isDone = done.includes(habit.id);
-    const card = document.createElement('div');
-    card.className = `habit-card${isDone ? ' done' : ''}`;
-    card.style.setProperty('--habit-color', habit.color);
-    card.dataset.id = habit.id;
-
-    // Calcula streak individual do hábito
-    const habitStreak = calcHabitStreak(habit.id);
-
-    card.innerHTML = `
-      <span class="habit-emoji">${habit.emoji}</span>
-      <div class="habit-info">
-        <div class="habit-name">${escapeHtml(habit.name)}</div>
-        <div class="habit-meta">🔥 ${habitStreak} dias — criado em ${formatCreated(habit.createdAt)}</div>
-      </div>
-      <div class="habit-actions">
-        <button class="habit-check" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}" style="--habit-color:${habit.color}">
-          ${isDone ? '✓' : ''}
-        </button>
-        <button class="habit-delete" title="Remover hábito">✕</button>
-      </div>
-    `;
-
-    // Toggle conclusão
-    card.querySelector('.habit-check').addEventListener('click', () => toggleHabit(habit.id));
-
-    // Deletar
-    card.querySelector('.habit-delete').addEventListener('click', () => deleteHabit(habit.id));
-
-    container.appendChild(card);
-  });
-
-  updateProgress();
-}
-
-/**
- * Escapa HTML para evitar XSS
- * @param {string} str
- * @returns {string}
- */
-function escapeHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-/**
- * Formata a data de criação de forma curta
- * @param {string} iso
- * @returns {string}
- */
-function formatCreated(iso) {
-  const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
-}
-
-/**
- * Calcula streak individual de um hábito
- * @param {string} habitId
- * @returns {number}
- */
 function calcHabitStreak(habitId) {
   let streak = 0;
   const today = new Date();
@@ -214,13 +114,214 @@ function calcHabitStreak(habitId) {
 }
 
 // ============================================================
-// TOGGLE / DELETE HÁBITO
+// PROGRESSO
 // ============================================================
 
-/**
- * Marca ou desmarca um hábito para hoje
- * @param {string} habitId
- */
+let wasComplete = false;
+
+function updateProgress() {
+  const today = todayISO();
+  const done = completions[today] || [];
+  const total = habits.length;
+  const completed = habits.filter(h => done.includes(h.id)).length;
+  const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+  document.getElementById('progressLabel').textContent =
+    `${completed} de ${total} hábito${total !== 1 ? 's' : ''} concluído${completed !== 1 ? 's' : ''}`;
+  document.getElementById('progressPercent').textContent = `${pct}%`;
+  document.getElementById('progressFill').style.width = `${pct}%`;
+  document.getElementById('streakCount').textContent = calcStreak();
+
+  // Confetti quando chega a 100%
+  const isNowComplete = total > 0 && completed === total;
+  if (isNowComplete && !wasComplete) {
+    launchConfetti();
+  }
+  wasComplete = isNowComplete;
+}
+
+// ============================================================
+// CONFETTI
+// ============================================================
+
+function launchConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+
+  const colors = ['#e8ff47', '#FF6B6B', '#4FC3F7', '#6BCB77', '#CE93D8', '#FFB74D', '#F48FB1', '#80CBC4'];
+  const particles = [];
+
+  for (let i = 0; i < 140; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 200,
+      r: 4 + Math.random() * 7,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      speed: 2.5 + Math.random() * 4,
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.2,
+      drift: (Math.random() - 0.5) * 1.5,
+      shape: Math.random() > 0.5 ? 'rect' : 'circle',
+      w: 6 + Math.random() * 8,
+      h: 4 + Math.random() * 6,
+    });
+  }
+
+  let frame = 0;
+  const maxFrames = 200;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const p of particles) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - frame / maxFrames);
+      if (p.shape === 'rect') {
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      p.y += p.speed;
+      p.x += p.drift;
+      p.angle += p.spin;
+    }
+
+    frame++;
+    if (frame < maxFrames) {
+      requestAnimationFrame(draw);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.style.display = 'none';
+    }
+  }
+
+  requestAnimationFrame(draw);
+  showToast('🎉 Parabéns! Todos os hábitos completos!');
+}
+
+// ============================================================
+// RENDERIZAÇÃO — VIEW TODAY (com drag & drop)
+// ============================================================
+
+function renderHabits() {
+  const container = document.getElementById('habitsList');
+  const today = todayISO();
+  const done = completions[today] || [];
+
+  container.querySelectorAll('.habit-card').forEach(el => el.remove());
+
+  const emptyState = document.getElementById('emptyState');
+  emptyState.style.display = habits.length === 0 ? 'block' : 'none';
+
+  habits.forEach((habit, index) => {
+    const isDone = done.includes(habit.id);
+    const card = document.createElement('div');
+    card.className = `habit-card${isDone ? ' done' : ''}`;
+    card.style.setProperty('--habit-color', habit.color);
+    card.dataset.id = habit.id;
+    card.dataset.index = index;
+    card.draggable = true;
+
+    const habitStreak = calcHabitStreak(habit.id);
+
+    card.innerHTML = `
+      <div class="drag-handle" title="Arrastar para reordenar">⠿</div>
+      <span class="habit-emoji">${habit.emoji}</span>
+      <div class="habit-info">
+        <div class="habit-name habit-name-clickable" title="Clique para editar">${escapeHtml(habit.name)}</div>
+        <div class="habit-meta">🔥 ${habitStreak} dias — criado em ${formatCreated(habit.createdAt)}</div>
+      </div>
+      <div class="habit-actions">
+        <button class="habit-check" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}" style="--habit-color:${habit.color}">
+          ${isDone ? '✓' : ''}
+        </button>
+        <button class="habit-delete" title="Remover hábito">✕</button>
+      </div>
+    `;
+
+    // Toggle conclusão
+    card.querySelector('.habit-check').addEventListener('click', () => toggleHabit(habit.id));
+
+    // Deletar
+    card.querySelector('.habit-delete').addEventListener('click', () => deleteHabit(habit.id));
+
+    // Editar ao clicar no nome
+    card.querySelector('.habit-name-clickable').addEventListener('click', () => openEditModal(habit.id));
+
+    // Drag & Drop events
+    card.addEventListener('dragstart', onDragStart);
+    card.addEventListener('dragover', onDragOver);
+    card.addEventListener('dragleave', onDragLeave);
+    card.addEventListener('drop', onDrop);
+    card.addEventListener('dragend', onDragEnd);
+
+    container.appendChild(card);
+  });
+
+  updateProgress();
+}
+
+// ============================================================
+// DRAG & DROP
+// ============================================================
+
+function onDragStart(e) {
+  dragSrcIndex = parseInt(e.currentTarget.dataset.index);
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragSrcIndex);
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const card = e.currentTarget;
+  const targetIndex = parseInt(card.dataset.index);
+  if (targetIndex !== dragSrcIndex) {
+    card.classList.add('drag-over');
+  }
+}
+
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  const card = e.currentTarget;
+  card.classList.remove('drag-over');
+
+  const targetIndex = parseInt(card.dataset.index);
+  if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+
+  // Reorder habits array
+  const moved = habits.splice(dragSrcIndex, 1)[0];
+  habits.splice(targetIndex, 0, moved);
+
+  dragSrcIndex = null;
+  saveData();
+  renderHabits();
+}
+
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.habit-card').forEach(c => c.classList.remove('drag-over'));
+  dragSrcIndex = null;
+}
+
+// ============================================================
+// TOGGLE / DELETE
+// ============================================================
+
 function toggleHabit(habitId) {
   const today = todayISO();
   if (!completions[today]) completions[today] = [];
@@ -238,18 +339,11 @@ function toggleHabit(habitId) {
   renderHabits();
 }
 
-/**
- * Remove um hábito permanentemente
- * @param {string} habitId
- */
 function deleteHabit(habitId) {
   habits = habits.filter(h => h.id !== habitId);
-
-  // Remove completions deste hábito em todos os dias
   for (const day in completions) {
     completions[day] = completions[day].filter(id => id !== habitId);
   }
-
   saveData();
   renderHabits();
   renderStats();
@@ -257,26 +351,47 @@ function deleteHabit(habitId) {
 }
 
 // ============================================================
-// MODAL — CRIAR HÁBITO
+// MODAL — CRIAR / EDITAR
 // ============================================================
 
-function openModal() {
-  document.getElementById('habitName').value = '';
-  // Reseta seleções
+function resetModalSelections(emoji = '💧', color = '#FF6B6B') {
   document.querySelectorAll('.emoji-picker span').forEach(el => el.classList.remove('selected'));
-  document.querySelector(`.emoji-picker [data-emoji="💧"]`).classList.add('selected');
-  selectedEmoji = '💧';
+  const emojiEl = document.querySelector(`.emoji-picker [data-emoji="${emoji}"]`);
+  if (emojiEl) emojiEl.classList.add('selected');
+  selectedEmoji = emoji;
 
   document.querySelectorAll('.color-picker span').forEach(el => el.classList.remove('selected'));
-  document.querySelector(`.color-picker [data-color="#FF6B6B"]`).classList.add('selected');
-  selectedColor = '#FF6B6B';
+  const colorEl = document.querySelector(`.color-picker [data-color="${color}"]`);
+  if (colorEl) colorEl.classList.add('selected');
+  selectedColor = color;
+}
 
+function openModal() {
+  editingHabitId = null;
+  document.getElementById('habitName').value = '';
+  document.getElementById('modalTitle').textContent = 'Novo Hábito';
+  document.getElementById('saveHabit').textContent = 'Criar Hábito';
+  resetModalSelections('💧', '#FF6B6B');
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('habitName').focus(), 100);
+}
+
+function openEditModal(habitId) {
+  const habit = habits.find(h => h.id === habitId);
+  if (!habit) return;
+
+  editingHabitId = habitId;
+  document.getElementById('habitName').value = habit.name;
+  document.getElementById('modalTitle').textContent = 'Editar Hábito';
+  document.getElementById('saveHabit').textContent = 'Salvar';
+  resetModalSelections(habit.emoji, habit.color);
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(() => document.getElementById('habitName').focus(), 100);
 }
 
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
+  editingHabitId = null;
 }
 
 function saveHabit() {
@@ -287,24 +402,82 @@ function saveHabit() {
     return;
   }
 
-  const habit = {
-    id: uid(),
-    name,
-    emoji: selectedEmoji,
-    color: selectedColor,
-    createdAt: todayISO()
-  };
-
-  habits.push(habit);
-  saveData();
-  closeModal();
-  renderHabits();
-  renderStats();
-  showToast(`${selectedEmoji} Hábito criado!`);
+  if (editingHabitId) {
+    // Modo edição
+    const habit = habits.find(h => h.id === editingHabitId);
+    if (habit) {
+      habit.name = name;
+      habit.emoji = selectedEmoji;
+      habit.color = selectedColor;
+    }
+    saveData();
+    closeModal();
+    renderHabits();
+    renderStats();
+    showToast(`✏️ Hábito atualizado!`);
+  } else {
+    // Modo criação
+    const habit = {
+      id: uid(),
+      name,
+      emoji: selectedEmoji,
+      color: selectedColor,
+      createdAt: todayISO()
+    };
+    habits.push(habit);
+    saveData();
+    closeModal();
+    renderHabits();
+    renderStats();
+    showToast(`${selectedEmoji} Hábito criado!`);
+  }
 }
 
 // ============================================================
-// CALENDÁRIO (VIEW HISTORY)
+// EXPORTAR / IMPORTAR BACKUP
+// ============================================================
+
+function exportData() {
+  const backup = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    habits,
+    completions
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `habitflow-backup-${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📦 Backup exportado!');
+}
+
+function importData(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.habits || !backup.completions) throw new Error('Formato inválido');
+
+      habits = backup.habits;
+      completions = backup.completions;
+      saveData();
+      renderHabits();
+      renderStats();
+      renderCalendar();
+      showToast('✅ Backup importado com sucesso!');
+    } catch {
+      showToast('❌ Arquivo inválido ou corrompido.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============================================================
+// CALENDÁRIO
 // ============================================================
 
 function renderCalendar() {
@@ -319,7 +492,6 @@ function renderCalendar() {
   const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
   const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
 
-  // Espaços vazios antes do primeiro dia
   for (let i = 0; i < firstDay; i++) {
     const empty = document.createElement('div');
     empty.className = 'cal-day empty';
@@ -346,7 +518,7 @@ function renderCalendar() {
 }
 
 // ============================================================
-// ESTATÍSTICAS (VIEW STATS)
+// ESTATÍSTICAS
 // ============================================================
 
 function renderStats() {
@@ -359,10 +531,8 @@ function renderStats() {
   }
 
   habits.forEach(habit => {
-    // Conta dias com esse hábito completo
     let completedDays = 0;
     let totalDaysTracked = 0;
-
     const createdDate = new Date(habit.createdAt + 'T00:00:00');
     const today = new Date();
 
@@ -400,10 +570,6 @@ function renderStats() {
 // ============================================================
 
 let toastTimeout;
-/**
- * Exibe uma mensagem de feedback temporária
- * @param {string} msg
- */
 function showToast(msg) {
   const toast = document.getElementById('toast');
   toast.textContent = msg;
@@ -413,7 +579,7 @@ function showToast(msg) {
 }
 
 // ============================================================
-// NAVEGAÇÃO ENTRE VIEWS
+// NAVEGAÇÃO
 // ============================================================
 
 function switchView(viewName) {
@@ -437,18 +603,16 @@ function initListeners() {
     btn.addEventListener('click', () => switchView(btn.dataset.view));
   });
 
-  // Modal
+  // Modal criar
   document.getElementById('openModal').addEventListener('click', openModal);
   document.getElementById('closeModal').addEventListener('click', closeModal);
   document.getElementById('cancelModal').addEventListener('click', closeModal);
   document.getElementById('saveHabit').addEventListener('click', saveHabit);
 
-  // Fechar modal clicando fora
   document.getElementById('modalOverlay').addEventListener('click', e => {
     if (e.target === document.getElementById('modalOverlay')) closeModal();
   });
 
-  // Enter no input
   document.getElementById('habitName').addEventListener('keydown', e => {
     if (e.key === 'Enter') saveHabit();
     if (e.key === 'Escape') closeModal();
@@ -472,7 +636,7 @@ function initListeners() {
     });
   });
 
-  // Calendário — navegação de mês
+  // Calendário
   document.getElementById('prevMonth').addEventListener('click', () => {
     calendarMonth--;
     if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
@@ -483,6 +647,16 @@ function initListeners() {
     if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
     renderCalendar();
   });
+
+  // Export / Import
+  document.getElementById('exportData').addEventListener('click', exportData);
+  document.getElementById('importData').addEventListener('click', () => {
+    document.getElementById('importFileInput').click();
+  });
+  document.getElementById('importFileInput').addEventListener('change', (e) => {
+    importData(e.target.files[0]);
+    e.target.value = ''; // reset so same file can be re-imported
+  });
 }
 
 // ============================================================
@@ -492,7 +666,6 @@ function initListeners() {
 function init() {
   loadData();
 
-  // Data na sidebar
   document.getElementById('sidebarDate').textContent =
     new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
 

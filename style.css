@@ -658,3 +658,129 @@ body {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 99px; }
+
+/* ============================================
+   CONFETTI CANVAS
+   ============================================ */
+#confettiCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  pointer-events: none;
+  display: none;
+}
+
+/* ============================================
+   BACKUP SECTION (sidebar)
+   ============================================ */
+.backup-section {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.backup-label {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 2px;
+}
+
+.btn-backup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: 0.02em;
+  width: 100%;
+}
+
+.btn-backup:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.btn-backup-import:hover {
+  border-color: #4FC3F7;
+  color: #4FC3F7;
+  background: rgba(79,195,247,0.08);
+}
+
+.backup-icon {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+/* ============================================
+   DRAG & DROP
+   ============================================ */
+.drag-handle {
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  cursor: grab;
+  padding: 0 4px;
+  flex-shrink: 0;
+  user-select: none;
+  transition: color var(--transition);
+  letter-spacing: -2px;
+}
+
+.habit-card:hover .drag-handle {
+  color: var(--text-muted);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.habit-card.dragging {
+  opacity: 0.4;
+  border-style: dashed;
+}
+
+.habit-card.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  transform: scale(1.01);
+}
+
+/* ============================================
+   EDITABLE HABIT NAME
+   ============================================ */
+.habit-name-clickable {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin: -1px -4px;
+  transition: background var(--transition), color var(--transition);
+  display: inline-block;
+  max-width: 100%;
+}
+
+.habit-name-clickable:hover {
+  background: rgba(232,255,71,0.1);
+  color: var(--accent);
+}
+
+.habit-name-clickable::after {
+  content: ' ✎';
+  font-size: 0.7rem;
+  opacity: 0;
+  transition: opacity var(--transition);
+  color: var(--accent);
+}
+
+.habit-card:hover .habit-name-clickable::after {
+  opacity: 0.6;
+}
