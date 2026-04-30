@@ -43,6 +43,11 @@
       <div class="streak-sub">dias consecutivos</div>
     </div>
 
+    <!-- QUOTE DO DIA -->
+    <div class="quote-card" id="quoteCard">
+      <div class="quote-text" id="quoteText">Carregando...</div>
+    </div>
+
     <!-- BACKUP BUTTONS -->
     <div class="backup-section">
       <div class="backup-label">Backup</div>
@@ -54,6 +59,11 @@
       </button>
       <input type="file" id="importFileInput" accept=".json" style="display:none" />
     </div>
+
+    <!-- THEME TOGGLE -->
+    <button class="btn-theme" id="themeToggle" title="Alternar tema">
+      <span id="themeIcon">☀</span> <span id="themeLabel">Modo Claro</span>
+    </button>
   </aside>
 
   <!-- MAIN CONTENT -->
@@ -166,6 +176,20 @@
           <span data-color="#F48FB1" style="background:#F48FB1"></span>
           <span data-color="#80CBC4" style="background:#80CBC4"></span>
         </div>
+
+        <label class="input-label">Frequência semanal</label>
+        <div class="freq-picker" id="freqPicker">
+          <button type="button" class="freq-btn" data-freq="1">1x</button>
+          <button type="button" class="freq-btn" data-freq="2">2x</button>
+          <button type="button" class="freq-btn" data-freq="3">3x</button>
+          <button type="button" class="freq-btn" data-freq="4">4x</button>
+          <button type="button" class="freq-btn" data-freq="5">5x</button>
+          <button type="button" class="freq-btn" data-freq="6">6x</button>
+          <button type="button" class="freq-btn selected" data-freq="7">Diario</button>
+        </div>
+
+        <label class="input-label">Anotacao (opcional)</label>
+        <textarea class="input-text input-notes" id="habitNotes" placeholder="Por que esse habito e importante pra voce?" maxlength="120" rows="2"></textarea>
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" id="cancelModal">Cancelar</button>

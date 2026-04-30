@@ -784,3 +784,125 @@ body {
 .habit-card:hover .habit-name-clickable::after {
   opacity: 0.6;
 }
+/* ============================================
+   LIGHT THEME
+   ============================================ */
+[data-theme="light"] {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #eeede9;
+  --border: #dddcda;
+  --border-bright: #c8c7c4;
+  --text: #1a1a1a;
+  --text-muted: #888580;
+  --text-dim: #bbb;
+  --accent: #5b21b6;
+  --accent-dim: rgba(91,33,182,0.1);
+}
+[data-theme="light"] .noise { opacity: 0.01; }
+[data-theme="light"] .habit-name-clickable:hover { background: rgba(91,33,182,0.08); }
+[data-theme="light"] .habit-name-clickable::after { color: var(--accent); }
+
+/* ============================================
+   THEME TOGGLE BUTTON
+   ============================================ */
+.btn-theme {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition);
+  width: 100%;
+  margin-top: 12px;
+}
+.btn-theme:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ============================================
+   QUOTE CARD
+   ============================================ */
+.quote-card {
+  margin: 20px 0 8px;
+  padding: 12px 14px;
+  border-left: 2px solid var(--accent);
+  background: var(--accent-dim);
+  border-radius: 0 8px 8px 0;
+}
+.quote-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ============================================
+   FREQUENCY PICKER
+   ============================================ */
+.freq-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.freq-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.freq-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.freq-btn.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0d0d0d;
+  font-weight: 600;
+}
+
+/* ============================================
+   NOTES TEXTAREA
+   ============================================ */
+.input-notes {
+  resize: none;
+  line-height: 1.5;
+  font-size: 0.8rem;
+}
+
+/* ============================================
+   HABIT NOTES / FREQ BADGE
+   ============================================ */
+.habit-notes {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.4;
+  font-style: italic;
+  opacity: 0.75;
+}
+.freq-badge {
+  display: inline-block;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+}

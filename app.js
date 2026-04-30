@@ -26,6 +26,24 @@ let editingHabitId = null;
 // Drag & drop state
 let dragSrcIndex = null;
 
+// Frequência semanal selecionada
+let selectedFreq = 7;
+
+// Frases motivacionais
+const QUOTES = [
+  'A consistência é a mãe do progresso.',
+  'Um dia de cada vez. Sempre.',
+  'Você não precisa ser perfeito, só precisa aparecer.',
+  'Pequenas ações todo dia criam grandes mudanças.',
+  'O segredo é começar.',
+  'Disciplina é escolher entre o que você quer agora e o que você quer mais.',
+  'Cada marca no calendário é uma vitória.',
+  'Hábitos são votos que você faz consigo mesmo.',
+  'A motivação te começa. O hábito te mantém.',
+  'Feito é melhor que perfeito.',
+];
+
+
 // ============================================================
 // UTILITÁRIOS
 // ============================================================
@@ -233,12 +251,14 @@ function renderHabits() {
 
     const habitStreak = calcHabitStreak(habit.id);
 
+    const freqLabel = habit.freq && habit.freq < 7 ? `${habit.freq}x/sem` : 'diário';
     card.innerHTML = `
       <div class="drag-handle" title="Arrastar para reordenar">⠿</div>
       <span class="habit-emoji">${habit.emoji}</span>
       <div class="habit-info">
         <div class="habit-name habit-name-clickable" title="Clique para editar">${escapeHtml(habit.name)}</div>
-        <div class="habit-meta">🔥 ${habitStreak} dias — criado em ${formatCreated(habit.createdAt)}</div>
+        <div class="habit-meta">🔥 ${habitStreak} dias — <span class="freq-badge">${freqLabel}</span></div>
+        ${habit.notes ? `<div class="habit-notes">${escapeHtml(habit.notes)}</div>` : ''}
       </div>
       <div class="habit-actions">
         <button class="habit-check" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}" style="--habit-color:${habit.color}">
@@ -369,9 +389,11 @@ function resetModalSelections(emoji = '💧', color = '#FF6B6B') {
 function openModal() {
   editingHabitId = null;
   document.getElementById('habitName').value = '';
+  document.getElementById('habitNotes').value = '';
   document.getElementById('modalTitle').textContent = 'Novo Hábito';
   document.getElementById('saveHabit').textContent = 'Criar Hábito';
   resetModalSelections('💧', '#FF6B6B');
+  resetFreqPicker(7);
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(() => document.getElementById('habitName').focus(), 100);
 }
@@ -382,9 +404,11 @@ function openEditModal(habitId) {
 
   editingHabitId = habitId;
   document.getElementById('habitName').value = habit.name;
+  document.getElementById('habitNotes').value = habit.notes || '';
   document.getElementById('modalTitle').textContent = 'Editar Hábito';
   document.getElementById('saveHabit').textContent = 'Salvar';
   resetModalSelections(habit.emoji, habit.color);
+  resetFreqPicker(habit.freq || 7);
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(() => document.getElementById('habitName').focus(), 100);
 }
@@ -422,6 +446,8 @@ function saveHabit() {
       name,
       emoji: selectedEmoji,
       color: selectedColor,
+      freq: selectedFreq,
+      notes: document.getElementById('habitNotes').value.trim(),
       createdAt: todayISO()
     };
     habits.push(habit);
@@ -657,20 +683,87 @@ function initListeners() {
     importData(e.target.files[0]);
     e.target.value = ''; // reset so same file can be re-imported
   });
+
+  // Theme toggle
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 }
 
 // ============================================================
 // INICIALIZAÇÃO
 // ============================================================
 
+
+// ============================================================
+// TEMA (DARK / LIGHT)
+// ============================================================
+
+function loadTheme() {
+  const saved = localStorage.getItem('habitflow_theme') || 'dark';
+  applyTheme(saved);
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const icon = document.getElementById('themeIcon');
+  const label = document.getElementById('themeLabel');
+  if (theme === 'light') {
+    if (icon) icon.textContent = '☽';
+    if (label) label.textContent = 'Modo Escuro';
+  } else {
+    if (icon) icon.textContent = '☀';
+    if (label) label.textContent = 'Modo Claro';
+  }
+  localStorage.setItem('habitflow_theme', theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// ============================================================
+// QUOTE DO DIA
+// ============================================================
+
+function showDailyQuote() {
+  const today = todayISO();
+  const idx = today.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % QUOTES.length;
+  const el = document.getElementById('quoteText');
+  if (el) el.textContent = '"' + QUOTES[idx] + '"';
+}
+
+// ============================================================
+// SELETOR DE FREQUÊNCIA
+// ============================================================
+
+function initFreqPicker() {
+  document.querySelectorAll('.freq-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.freq-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedFreq = parseInt(btn.dataset.freq);
+    });
+  });
+}
+
+function resetFreqPicker(freq = 7) {
+  selectedFreq = freq;
+  document.querySelectorAll('.freq-btn').forEach(btn => {
+    btn.classList.toggle('selected', parseInt(btn.dataset.freq) === freq);
+  });
+}
+
 function init() {
   loadData();
+  loadTheme();
+  showDailyQuote();
 
   document.getElementById('sidebarDate').textContent =
     new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
 
   renderHabits();
   initListeners();
+  initFreqPicker();
 }
 
 document.addEventListener('DOMContentLoaded', init);
