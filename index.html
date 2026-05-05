@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HabitFlow — Gerenciador de Hábitos</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="noise"></div>
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">HabitFlow</span>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-btn active" data-view="today"><span class="nav-icon">◉</span> Hoje</button>
+      <button class="nav-btn" data-view="history"><span class="nav-icon">◈</span> Histórico</button>
+      <button class="nav-btn" data-view="stats"><span class="nav-icon">◇</span> Estatísticas</button>
+      <button class="nav-btn" data-view="extras"><span class="nav-icon">✦</span> Extras</button>
+    </nav>
+
+    <!-- XP / NÍVEL -->
+    <div class="xp-card">
+      <div class="xp-header">
+        <span class="xp-label">Nível <span id="playerLevel">1</span></span>
+        <span class="xp-pts" id="xpDisplay">0 XP</span>
+      </div>
+      <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+      <div class="xp-next" id="xpNext">0 / 100 XP</div>
+    </div>
+
+    <div class="sidebar-date">
+      <div class="date-label">Hoje é</div>
+      <div class="date-value" id="sidebarDate"></div>
+    </div>
+
+    <div class="streak-card">
+      <div class="streak-label">🔥 Streak atual</div>
+      <div class="streak-number" id="streakCount">0</div>
+      <div class="streak-sub">dias consecutivos</div>
+    </div>
+
+    <div class="quote-card" id="quoteCard">
+      <div class="quote-text" id="quoteText">Carregando...</div>
+    </div>
+
+    <!-- HUMOR DO DIA -->
+    <div class="mood-card">
+      <div class="mood-label">Como você está hoje?</div>
+      <div class="mood-picker" id="moodPicker">
+        <button class="mood-btn" data-mood="1" title="Péssimo">😩</button>
+        <button class="mood-btn" data-mood="2" title="Mal">😔</button>
+        <button class="mood-btn" data-mood="3" title="Ok">😐</button>
+        <button class="mood-btn" data-mood="4" title="Bem">😊</button>
+        <button class="mood-btn" data-mood="5" title="Ótimo">🤩</button>
+      </div>
+    </div>
+
+    <div class="backup-section">
+      <div class="backup-label">Backup</div>
+      <button class="btn-backup" id="exportData"><span class="backup-icon">↑</span> Exportar</button>
+      <button class="btn-backup btn-backup-import" id="importData"><span class="backup-icon">↓</span> Importar</button>
+      <input type="file" id="importFileInput" accept=".json" style="display:none" />
+    </div>
+
+    <button class="btn-theme" id="themeToggle" title="Alternar tema">
+      <span id="themeIcon">☀</span> <span id="themeLabel">Modo Claro</span>
+    </button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- VIEW: TODAY -->
+    <section class="view active" id="view-today">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Seus Hábitos</h1>
+          <p class="page-sub">Marque o que você completou hoje</p>
+        </div>
+        <button class="btn-add" id="openModal">+ Novo Hábito</button>
+      </header>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-meta">
+          <span id="progressLabel">0 de 0 hábitos concluídos</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <!-- DESAFIO DO DIA -->
+      <div class="challenge-card" id="dailyChallenge">
+        <div class="challenge-badge">⚡ Desafio do Dia</div>
+        <div class="challenge-text" id="challengeText">Carregando...</div>
+        <button class="challenge-done-btn" id="challengeDoneBtn">Concluir +50 XP</button>
+      </div>
+
+      <div class="habits-list" id="habitsList">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">◈</div>
+          <p>Nenhum hábito ainda.</p>
+          <p>Clique em <strong>+ Novo Hábito</strong> para começar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: HISTORY -->
+    <section class="view" id="view-history">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Histórico</h1>
+          <p class="page-sub">Calendário de consistência</p>
+        </div>
+      </header>
+      <div class="history-grid-wrap">
+        <div class="history-controls">
+          <button class="month-nav" id="prevMonth">‹</button>
+          <span class="month-label" id="monthLabel"></span>
+          <button class="month-nav" id="nextMonth">›</button>
+        </div>
+        <div class="calendar-weekdays">
+          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="calendar-legend">
+          <span class="legend-dot dot-0"></span> Nenhum
+          <span class="legend-dot dot-1"></span> Parcial
+          <span class="legend-dot dot-2"></span> Completo
+        </div>
+      </div>
+      <div class="mood-history-wrap">
+        <h3 class="section-title">😊 Humor dos Últimos 14 Dias</h3>
+        <div class="mood-history-grid" id="moodHistoryGrid"></div>
+      </div>
+    </section>
+
+    <!-- VIEW: STATS -->
+    <section class="view" id="view-stats">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Estatísticas</h1>
+          <p class="page-sub">Seu desempenho por hábito</p>
+        </div>
+      </header>
+      <div class="achievements-wrap">
+        <h3 class="section-title">🏆 Conquistas</h3>
+        <div class="achievements-grid" id="achievementsGrid"></div>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+    </section>
+
+    <!-- VIEW: EXTRAS -->
+    <section class="view" id="view-extras">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Extras</h1>
+          <p class="page-sub">Ferramentas para turbinar seu desenvolvimento</p>
+        </div>
+      </header>
+
+      <div class="extras-grid">
+
+        <!-- POMODORO -->
+        <div class="widget-card widget-pomodoro">
+          <div class="widget-header">
+            <span class="widget-icon">🍅</span>
+            <span class="widget-title">Pomodoro Timer</span>
+          </div>
+          <div class="pomodoro-display">
+            <div class="pomodoro-ring" id="pomodoroRing">
+              <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" class="ring-bg"/><circle cx="60" cy="60" r="54" class="ring-fg" id="ringFg"/></svg>
+              <div class="pomodoro-time" id="pomodoroTime">25:00</div>
+              <div class="pomodoro-mode" id="pomodoroMode">Foco</div>
+            </div>
+          </div>
+          <div class="pomodoro-controls">
+            <button class="pom-btn" id="pomStart">▶ Iniciar</button>
+            <button class="pom-btn pom-btn-secondary" id="pomReset">↺ Reset</button>
+            <button class="pom-btn pom-btn-secondary" id="pomSkip">⏭ Pular</button>
+          </div>
+          <div class="pomodoro-sessions"><span id="pomSessions">0 pomodoros hoje</span></div>
+        </div>
+
+        <!-- RESPIRAÇÃO -->
+        <div class="widget-card widget-breath">
+          <div class="widget-header">
+            <span class="widget-icon">🌬</span>
+            <span class="widget-title">Respiração 4-7-8</span>
+          </div>
+          <div class="breath-container">
+            <div class="breath-circle" id="breathCircle">
+              <div class="breath-inner">
+                <span class="breath-label" id="breathLabel">Iniciar</span>
+                <span class="breath-count" id="breathCount"></span>
+              </div>
+            </div>
+          </div>
+          <p class="breath-description">Inspira 4s · Segura 7s · Expira 8s</p>
+          <button class="breath-btn" id="breathBtn">Iniciar Sessão</button>
+          <div class="breath-cycles" id="breathCycles">0 ciclos completos</div>
+        </div>
+
+        <!-- SNAKE -->
+        <div class="widget-card widget-snake">
+          <div class="widget-header">
+            <span class="widget-icon">🐍</span>
+            <span class="widget-title">Snake — Relaxe um pouco</span>
+            <span class="snake-score-badge">Recorde: <span id="snakeRecord">0</span></span>
+          </div>
+          <div class="snake-container">
+            <canvas id="snakeCanvas" width="280" height="280"></canvas>
+            <div class="snake-overlay" id="snakeOverlay">
+              <div class="snake-overlay-title">🐍 Snake</div>
+              <div class="snake-overlay-sub" id="snakeOverlaySub">Pressione Iniciar para jogar</div>
+              <button class="snake-start-btn" id="snakeStartBtn">Iniciar</button>
+            </div>
+          </div>
+          <div class="snake-controls-hint">← ↑ → ↓ ou WASD</div>
+          <div class="snake-score-row">Pontuação: <span id="snakeScore">0</span></div>
+        </div>
+
+        <!-- AFIRMAÇÕES + DIÁRIO -->
+        <div class="widget-card widget-affirmation">
+          <div class="widget-header">
+            <span class="widget-icon">✨</span>
+            <span class="widget-title">Afirmações &amp; Diário</span>
+          </div>
+          <div class="affirmation-text" id="affirmationText">"Eu sou capaz de criar hábitos que transformam minha vida."</div>
+          <button class="affirmation-btn" id="newAffirmation">✦ Nova afirmação</button>
+          <div class="journal-wrap">
+            <textarea class="journal-input" id="journalInput" placeholder="Escreva uma reflexão, gratidão ou pensamento de hoje..." rows="3" maxlength="280"></textarea>
+            <button class="journal-save-btn" id="journalSave">Salvar reflexão</button>
+          </div>
+          <div class="journal-entries" id="journalEntries"></div>
+        </div>
+
+        <!-- MODO FOCO -->
+        <div class="widget-card widget-focus">
+          <div class="widget-header">
+            <span class="widget-icon">🎯</span>
+            <span class="widget-title">Modo Foco</span>
+          </div>
+          <p class="focus-desc">Defina uma intenção e entre em modo de concentração total. A tela fica limpa e o timer começa.</p>
+          <input type="text" class="focus-input" id="focusIntention" placeholder="Ex: Estudar por 30 minutos..." maxlength="60" />
+          <button class="focus-start-btn" id="focusStart">Entrar em Modo Foco</button>
+        </div>
+
+        <!-- CARA OU COROA -->
+        <div class="widget-card widget-coin">
+          <div class="widget-header">
+            <span class="widget-icon">🪙</span>
+            <span class="widget-title">Cara ou Coroa</span>
+          </div>
+          <p class="coin-desc">Indeciso? Deixa o destino decidir.</p>
+          <div class="coin-question-wrap">
+            <input type="text" class="coin-question-input" id="coinQuestion" placeholder="O que você está decidindo? (opcional)" maxlength="60" />
+          </div>
+          <div class="coin-flip-area">
+            <div class="coin" id="coinEl">
+              <div class="coin-face coin-front">👤</div>
+              <div class="coin-face coin-back">🌟</div>
+            </div>
+          </div>
+          <div class="coin-result" id="coinResult"></div>
+          <button class="coin-btn" id="coinFlipBtn">🪙 Jogar Moeda</button>
+          <div class="coin-history" id="coinHistory"></div>
+        </div>
+
+        <!-- ROLETA DE HÁBITO -->
+        <div class="widget-card widget-roulette">
+          <div class="widget-header">
+            <span class="widget-icon">🎰</span>
+            <span class="widget-title">Roleta de Hábito</span>
+          </div>
+          <p class="roulette-desc">Sem saber por onde começar? Gira a roleta e faça o que sair!</p>
+          <div class="roulette-display">
+            <div class="roulette-wheel" id="rouletteWheel">
+              <div class="roulette-inner" id="rouletteInner">🎯</div>
+            </div>
+          </div>
+          <div class="roulette-result" id="rouletteResult">Gire para descobrir seu próximo hábito</div>
+          <button class="roulette-btn" id="rouletteSpinBtn">🎰 Girar</button>
+        </div>
+
+        <!-- CONTADOR DE ÁGUA -->
+        <div class="widget-card widget-water">
+          <div class="widget-header">
+            <span class="widget-icon">💧</span>
+            <span class="widget-title">Contador de Água</span>
+          </div>
+          <p class="water-desc">Beba 8 copos por dia. Cada toque = 250ml.</p>
+          <div class="water-glasses" id="waterGlasses"></div>
+          <div class="water-progress-wrap">
+            <div class="water-bar-bg">
+              <div class="water-bar-fill" id="waterBarFill"></div>
+            </div>
+            <div class="water-ml" id="waterMl">0 / 2000ml</div>
+          </div>
+          <div class="water-actions">
+            <button class="water-add-btn" id="waterAdd">+ Copo</button>
+            <button class="water-reset-btn" id="waterReset">↺</button>
+          </div>
+        </div>
+
+        <!-- GRATIDÃO DO DIA -->
+        <div class="widget-card widget-gratitude">
+          <div class="widget-header">
+            <span class="widget-icon">🙏</span>
+            <span class="widget-title">3 Gratidões</span>
+          </div>
+          <p class="gratitude-desc">Anote 3 coisas pelas quais é grato hoje.</p>
+          <div class="gratitude-inputs" id="gratitudeInputs">
+            <div class="gratitude-item"><span class="gratitude-num">1</span><input type="text" class="gratitude-input" placeholder="Sou grato por..." maxlength="60" /></div>
+            <div class="gratitude-item"><span class="gratitude-num">2</span><input type="text" class="gratitude-input" placeholder="Sou grato por..." maxlength="60" /></div>
+            <div class="gratitude-item"><span class="gratitude-num">3</span><input type="text" class="gratitude-input" placeholder="Sou grato por..." maxlength="60" /></div>
+          </div>
+          <button class="gratitude-save-btn" id="gratitudeSave">💾 Salvar gratidões</button>
+          <div class="gratitude-streak" id="gratitudeStreak"></div>
+        </div>
+
+
+        <div class="widget-card widget-quick-stats">
+          <div class="widget-header">
+            <span class="widget-icon">📊</span>
+            <span class="widget-title">Visão Geral</span>
+          </div>
+          <div class="quick-stats-grid" id="quickStatsGrid"></div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODO FOCO OVERLAY -->
+  <div class="focus-overlay" id="focusOverlay">
+    <div class="focus-content">
+      <div class="focus-badge">🎯 MODO FOCO</div>
+      <div class="focus-intention-display" id="focusIntentionDisplay">Sua sessão</div>
+      <div class="focus-timer-display" id="focusTimerDisplay">00:00</div>
+      <div class="focus-quote" id="focusQuote"></div>
+      <button class="focus-end-btn" id="focusEnd">Encerrar Sessão</button>
+    </div>
+  </div>
+
+  <!-- MODAL CRIAR / EDITAR HÁBITO -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Novo Hábito</h2>
+        <button class="modal-close" id="closeModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <label class="input-label">Nome do hábito</label>
+        <input type="text" class="input-text" id="habitName" placeholder="Ex: Beber 2L de água" maxlength="40" />
+        <label class="input-label">Ícone</label>
+        <div class="emoji-picker" id="emojiPicker">
+          <span data-emoji="💧">💧</span><span data-emoji="📚">📚</span><span data-emoji="🏃">🏃</span>
+          <span data-emoji="🧘">🧘</span><span data-emoji="🥗">🥗</span><span data-emoji="😴">😴</span>
+          <span data-emoji="🎸">🎸</span><span data-emoji="✍️">✍️</span><span data-emoji="🧹">🧹</span>
+          <span data-emoji="💪">💪</span><span data-emoji="🌿">🌿</span><span data-emoji="🎯">🎯</span>
+        </div>
+        <label class="input-label">Cor</label>
+        <div class="color-picker" id="colorPicker">
+          <span data-color="#FF6B6B" style="background:#FF6B6B"></span>
+          <span data-color="#FFD93D" style="background:#FFD93D"></span>
+          <span data-color="#6BCB77" style="background:#6BCB77"></span>
+          <span data-color="#4FC3F7" style="background:#4FC3F7"></span>
+          <span data-color="#CE93D8" style="background:#CE93D8"></span>
+          <span data-color="#FFB74D" style="background:#FFB74D"></span>
+          <span data-color="#F48FB1" style="background:#F48FB1"></span>
+          <span data-color="#80CBC4" style="background:#80CBC4"></span>
+        </div>
+        <label class="input-label">Frequência semanal</label>
+        <div class="freq-picker" id="freqPicker">
+          <button type="button" class="freq-btn" data-freq="1">1x</button>
+          <button type="button" class="freq-btn" data-freq="2">2x</button>
+          <button type="button" class="freq-btn" data-freq="3">3x</button>
+          <button type="button" class="freq-btn" data-freq="4">4x</button>
+          <button type="button" class="freq-btn" data-freq="5">5x</button>
+          <button type="button" class="freq-btn" data-freq="6">6x</button>
+          <button type="button" class="freq-btn selected" data-freq="7">Diario</button>
+        </div>
+        <label class="input-label">Anotacao (opcional)</label>
+        <textarea class="input-text input-notes" id="habitNotes" placeholder="Por que esse habito e importante pra voce?" maxlength="120" rows="2"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="cancelModal">Cancelar</button>
+        <button class="btn-save" id="saveHabit">Criar Hábito</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- LEVEL UP MODAL -->
+  <div class="levelup-overlay" id="levelupOverlay">
+    <div class="levelup-card">
+      <div class="levelup-emoji">🎉</div>
+      <div class="levelup-title">LEVEL UP!</div>
+      <div class="levelup-sub">Você chegou ao nível <span id="levelupNumber">2</span>!</div>
+      <button class="levelup-btn" id="levelupClose">Continuar</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
